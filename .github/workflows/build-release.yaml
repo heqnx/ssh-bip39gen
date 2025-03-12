@@ -1,0 +1,69 @@
+name: Build and Release ssh-bip39gen
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform:
+          - linux-amd64
+          - linux-386
+          - windows-amd64
+          - windows-386
+          - darwin-amd64
+          - darwin-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Build ${{ matrix.platform }}
+        env:
+          GOOS: ${{ split(matrix.platform, '-')[0] }}
+          GOARCH: ${{ split(matrix.platform, '-')[1] }}
+        run: |
+          make ${{ matrix.platform }}
+          ls -lh build/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssh-bip39gen-${{ matrix.platform }}
+          path: build/ssh-bip39gen-${{ matrix.platform }}*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/ssh-bip39gen-linux-amd64/ssh-bip39gen-linux-amd64
+            artifacts/ssh-bip39gen-linux-386/ssh-bip39gen-linux-386
+            artifacts/ssh-bip39gen-windows-amd64/ssh-bip39gen-windows-amd64.exe
+            artifacts/ssh-bip39gen-windows-386/ssh-bip39gen-windows-386.exe
+            artifacts/ssh-bip39gen-darwin-amd64/ssh-bip39gen-darwin-amd64
+            artifacts/ssh-bip39gen-darwin-arm64/ssh-bip39gen-darwin-arm64
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
