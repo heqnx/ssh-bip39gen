@@ -10,13 +10,25 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - linux-amd64
-          - linux-386
-          - windows-amd64
-          - windows-386
-          - darwin-amd64
-          - darwin-arm64
+        include:
+          - platform: linux-amd64
+            goos: linux
+            goarch: amd64
+          - platform: linux-386
+            goos: linux
+            goarch: 386
+          - platform: windows-amd64
+            goos: windows
+            goarch: amd64
+          - platform: windows-386
+            goos: windows
+            goarch: 386
+          - platform: darwin-amd64
+            goos: darwin
+            goarch: amd64
+          - platform: darwin-arm64
+            goos: darwin
+            goarch: arm64
 
     steps:
       - name: Checkout code
@@ -32,8 +44,8 @@ jobs:
 
       - name: Build ${{ matrix.platform }}
         env:
-          GOOS: ${{ split(matrix.platform, '-')[0] }}
-          GOARCH: ${{ split(matrix.platform, '-')[1] }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
           make ${{ matrix.platform }}
           ls -lh build/
